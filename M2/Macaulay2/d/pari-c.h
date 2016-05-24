@@ -2,6 +2,7 @@
 extern "C" {
 #endif
 
+    #include <M2inits.h>
     #define VARLEN 1
     typedef struct { unsigned int n; __mpz_struct *el[VARLEN]; } mpz_col;
     typedef struct { unsigned int n; mpz_col *el[VARLEN]; } mpz_mat;
