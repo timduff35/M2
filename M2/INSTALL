@@ -174,21 +174,15 @@ various modern operating systems:
       homebrew somewhere other than in /usr/local may prefer to point a browser
       at https://github.com/Homebrew/homebrew/tarball/master, which will download
       a tar file that can be untarred anywhere and renamed.)
+    Periodically upgrade the programs and libraries to the latest versions with
+	brew update
+        brew upgrade
     Install the programs and libraries needed for building:
 	brew tap homebrew/versions
 	brew tap homebrew/science
 	brew tap homebrew/homebrew-x11
-	brew update
-	brew install gcc49 pkg-config autoconf automake gnu-tar libtool boost
-    Periodically upgrade the programs and libraries to the latest versions with
-	brew update
-        brew upgrade
-    Next, if intending to distribute the Macaulay2 binaries to others, do:
-	brew install --build-from-source --cc=gcc-4.9 bdw-gc libatomic_ops gdbm gmp cddlib glpk
-      else do:    
-	brew install bdw-gc libatomic_ops gdbm gmp cddlib glpk
-    Note: the libraries pari and flint are also available from homebrew, but we build them
-      ourselves.
+	brew install gcc49 pkg-config autoconf automake gnu-tar libtool boost ntl
+	brew install bdw-gc libatomic_ops gdbm gmp cddlib glpk pari flint
     Note: the reason we compile from source with gcc is that the precompiled
       packages that brew would otherwise download are compiled using "clang"
       and assume that the CPU supports advanced vector extensions, which not

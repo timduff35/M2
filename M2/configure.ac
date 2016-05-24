@@ -280,44 +280,12 @@ then AC_MSG_CHECKING(for $CC version)
      AC_MSG_RESULT($GCCVERSION)
 fi
 
-dnl this macro is available only in autoconf 2.60, but most systems have 2.59 as the default:
-dnl AC_PROG_MKDIR_P()
+AC_PROG_MKDIR_P()
 
 AC_CHECK_SIZEOF([int *])
 AC_SUBST(SIZEOF_INT_P,$ac_cv_sizeof_int_p)
 AC_CHECK_SIZEOF([long])
 AC_SUBST(SIZEOF_LONG,$ac_cv_sizeof_long)
-
-dnl Now we make the 32 bit / 64 bit choice explicit, because config.guess may guess it's a 32 bit system even though gcc compiles
-dnl 64 bit object code by default, and then mpir's configure script (versions 1.2.1 and 1.3.0-rc1) gets confused.
-dnl if test "$GCC" = yes
-dnl then if test "$SIZEOF_INT_P" = 4
-dnl      then case " $CC $CFLAGS " in
-dnl      	    *" -m32 "*) ;;
-dnl 	    *) CC="$CC -m32" ;;
-dnl 	  esac
-dnl      fi
-dnl      if test "$SIZEOF_INT_P" = 8
-dnl      then case " $CC $CFLAGS " in
-dnl      	    *" -m64 "*) ;;
-dnl 	    *) CC="$CC -m64" ;;
-dnl 	  esac
-dnl      fi
-dnl fi
-dnl if test "$GXX" = yes
-dnl then if test "$SIZEOF_INT_P" = 4
-dnl      then case " $CXX $CFLAGS " in
-dnl      	    *" -m32 "*) ;;
-dnl 	    *) CXX="$CXX -m32" ;;
-dnl 	  esac
-dnl      fi
-dnl      if test "$SIZEOF_INT_P" = 8
-dnl      then case " $CXX $CFLAGS " in
-dnl      	    *" -m64 "*) ;;
-dnl 	    *) CXX="$CXX -m64" ;;
-dnl 	  esac
-dnl      fi
-dnl fi
 
 AC_MSG_CHECKING([whether compiling with $CXX and then linking with $CC works])
 cat >unwindtest-main.cpp <<EOF
@@ -798,13 +766,13 @@ AC_SUBST(BUILTLIBS,)
 #    linbox is provided as an option for experimentation
 #    linbox needs fflas-ffpack and givaro
 #    fflas-ffpack needs givaro and lapack
-#    mpir is used by givaro
-#    mpir and mpfr are used by fplll
+#    gmp is used by givaro
+#    gmp and mpfr are used by fplll
 #    fflas-ffpack is provided as an option for experimentation
 #        it needs lapack
 #    Henry Duong is experimenting with mpack, a multi-precision version of blas+lapack based on mpfr
-#    mpack depends on gmp (which mpir provides) mpfr mpc qd
-#    flint depends on mpir and mpfr
+#    mpack depends on gmp mpfr mpc qd
+#    flint depends on gmp and mpfr
 AC_SUBST(PROGLIST, "4ti2 gfan normaliz nauty cddplus lrslib gftables")
 AC_SUBST(LIBLIST, " atomic_ops gc gdbm mpir mpfr pari readline ntl flint factory lapack frobby glpk cddlib fplll givaro fflas_ffpack linbox boost mpc qd mpack gtest ")
 AC_SUBST(SUBLIST, " memtailor mathic mathicgb ")
@@ -824,21 +792,12 @@ dnl make some programs optional:
 BUILD_lrslib=no
 BUILD_cddplus=no
 
-BUILD_mpir=yes
-BUILD_ALWAYS="mpir $BUILD_ALWAYS"
-# We always build mpir so we can patch the routine mp_set_memory_functions() in it so
-# it does nothing; that prevents libraries such as pari from telling it what memory
-# allocation functions to use.  But we should instead patch pari, so we can use the
-# gmp library that comes with many linux distributions.
-
 BUILD_mpfr=yes
 BUILD_ALWAYS="mpfr $BUILD_ALWAYS"
-# We always build mpfr because we tell mpir (which is impersonating gmp) to use libgc for its
+# We always build mpfr because we tell gmp to use libgc for its
 # memory allocation.  But mpfr puts pointers to gmp numbers in thread local variables, unless
 # specially configured, which libgc can't find, so libgc regards them as garbage and ultimately
 # frees them, causing strange errors.  See libraries/mpfr/Makefile for more information.
-# Another possible problem can arise if mpfr comes dynamically linked to libgmp, but we want
-# to use mpir instead.
 
 AC_ARG_ENABLE(gfan, AS_HELP_STRING(--disable-gfan,[do not build gfan program]), GFAN=$enableval)
 if test "$GFAN" = no
@@ -1024,25 +983,25 @@ then AC_LANG(C)
       	  [ AC_MSG_RESULT([no, will build mpir]); BUILD_mpir=yes ],
       	  [ AC_MSG_RESULT([cross-compiling, test not possible]) ])
 fi
+dnl if test $BUILD_mpir = no
+dnl then AC_MSG_CHECKING(for gmp ostream compatibility)
+dnl      dnl This detects the case where we are trying to build with gcc on Mac OS X, but where libgmp has
+dnl      dnl been compiled with clang by homebrew.  The compilers have different binary interfaces for
+dnl      dnl the C++ type "ostream".
+dnl      AC_LANG(C++)
+dnl      AC_LINK_IFELSE([AC_LANG_SOURCE([
+dnl #	  include <gmpxx.h>
+dnl #	  include <ostream>
+dnl 	  void f(std::ostream o, mpq_ptr x) { o << x; }
+dnl 	  int main () {}
+dnl 	])],
+dnl 	[AC_MSG_RESULT(yes)],
+dnl 	[BUILD_mpir=yes
+dnl          AC_MSG_RESULT([no, will build mpir])])
+dnl fi
 if test $BUILD_mpir = yes
 then BUILTLIBS="-lgmpxx -lgmp $BUILTLIBS"
 else LIBS="-lgmpxx $LIBS"
-fi
-if test $BUILD_mpir = no
-then AC_MSG_CHECKING(for gmp ostream compatibility)
-     dnl This detects the case where we are trying to build with gcc on Mac OS X, but where libgmp has
-     dnl been compiled with clang by homebrew.  The compilers have different binary interfaces for
-     dnl the C++ type "ostream".
-     AC_LANG(C++)
-     AC_LINK_IFELSE([AC_LANG_SOURCE([
-#	  include <gmpxx.h>
-#	  include <ostream>
-	  void f(std::ostream o, mpq_ptr x) { o << x; }
-	  int main () {}
-	])],
-	[AC_MSG_RESULT(yes)],
-	[BUILD_mpir=yes
-         AC_MSG_RESULT([no, will build mpir])])
 fi
 
 if test "$PARI" = yes
@@ -1152,7 +1111,7 @@ then AC_LANG(C)
 	  AC_RUN_IFELSE([AC_LANG_SOURCE([[
 		  #include <stdio.h>
 		  #include <mpfr.h>
-		  main () {
+		  int main () {
 		      FILE *msg = fdopen(]]AS_MESSAGE_FD[[,"w");
 		      unsigned major, minor, patch_level;
 		      major = MPFR_VERSION_MAJOR;
@@ -1226,7 +1185,7 @@ then AC_LANG(C)
      then AC_MSG_CHECKING([whether flint library is version at least 2.4.3])
           AC_RUN_IFELSE([AC_LANG_SOURCE([[
 		  #include <flint/flint.h>
-		  main () { 
+		  int main () { 
  		    FILE *msg = fdopen(]]AS_MESSAGE_FD[[,"w");
  		    fprintf(msg,"(version %d.%d.%d found) ", __FLINT_RELEASE / 10000, __FLINT_RELEASE/100%100, __FLINT_RELEASE%100);
 		    return __FLINT_RELEASE >= 20403 /* 2.4.3 */ ? 0 : 1 ; 
@@ -1298,7 +1257,7 @@ then AC_LANG(C++)
 	  AC_RUN_IFELSE([AC_LANG_SOURCE([[
 		  #include <stdio.h>
 		  #include <NTL/version.h>
-		  main () {
+		  int main () {
 		      FILE *msg = fdopen(]]AS_MESSAGE_FD[[,"w");
 		      unsigned major, minor, revision;
 		      major = NTL_MAJOR_VERSION;
@@ -1314,7 +1273,7 @@ then AC_LANG(C++)
      then AC_MSG_CHECKING([whether ntl library is compiled with gmp (or mpir), using NTL/config.h])
 	  AC_RUN_IFELSE([AC_LANG_SOURCE([[
 		  #include <NTL/config.h>
-		  main () {
+		  int main () {
 		      return !( 
 			  #ifdef NTL_GMP_LIP
 			  1
@@ -1636,7 +1595,7 @@ AC_MSG_RESULT($HAVE_WSTRICT_ALIASING)
 AC_MSG_CHECKING(whether $CC accepts -Wfatal-errors)
 AC_LANG(C)
 SAVE=$CFLAGS
-CFLAGS="$CFLAGS -Wfatal-errors"
+CFLAGS="$CFLAGS -Wfatal-errors -Werror"
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([int main() {}])], 
     M2_CFLAGS="$M2_CFLAGS -Wfatal-errors"
     AC_MSG_RESULT(yes, adding -Wfatal-errors to flags),
@@ -1649,7 +1608,7 @@ dnl about invalid options that turn off warnings, if there are no warnings to be
 dnl It's a feature, not a bug!
 AC_LANG(C)
 SAVE=$CFLAGS
-CFLAGS="$CFLAGS -Wmismatched-tags"
+CFLAGS="$CFLAGS -Wmismatched-tags -Werror"
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([int main() {}])], 
     CXXFLAGS="$CXXFLAGS -Wno-mismatched-tags"
     # we don't like seeing this warning, especially from the "clang" compiler
@@ -1661,10 +1620,20 @@ AC_MSG_CHECKING(whether $CC accepts -Wparentheses-equality)
 AC_SUBST(HAVE_WPARENTHESES_EQUALITY,)
 AC_LANG(C)
 SAVE=$CFLAGS
-CFLAGS="$CFLAGS -Wparentheses-equality"
+CFLAGS="$CFLAGS -Wparentheses-equality -Werror"
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([int main() {}])], 
     HAVE_WPARENTHESES_EQUALITY=yes;  AC_MSG_RESULT(yes),
     HAVE_WPARENTHESES_EQUALITY=no ;  AC_MSG_RESULT(no))
+CFLAGS=$SAVE
+
+AC_MSG_CHECKING(whether $CC accepts -Wframe-address)
+AC_SUBST(HAVE_WFRAME_ADDRESS,)
+AC_LANG(C)
+SAVE=$CFLAGS
+CFLAGS="$CFLAGS -Wframe-address -Werror"
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([int main() {}])], 
+    HAVE_WFRAME_ADDRESS=yes;  AC_MSG_RESULT(yes),
+    HAVE_WFRAME_ADDRESS=no ;  AC_MSG_RESULT(no))
 CFLAGS=$SAVE
 
 AC_MSG_CHECKING([whether $CC accepts -Wl,-z,noexecstack])
