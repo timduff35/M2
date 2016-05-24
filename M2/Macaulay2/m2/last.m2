@@ -4,6 +4,8 @@
 
 recursionLimit = 300
 
+protect Example						    -- we export this so colorization of "Example" works in SimpleDoc strings
+
 degreesRing 0;
 
 setIOUnSynchronized()					    -- try to avoid deadlocks when running examples

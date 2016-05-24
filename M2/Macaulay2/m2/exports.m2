@@ -136,6 +136,7 @@ export {
 	"EngineRing",
 	"Equation",
 	"EulerConstant",
+        "Example",
 	"ExampleFiles",
 	"Exclude",
 	"Expression",
