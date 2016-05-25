@@ -169,7 +169,7 @@ int pari_ispseudoprime(mpz_t x, long flags) { /* used in pari.d */
 
 */
 
-#define pari_examine(x) do { fputs(" " #x ": ", stdout); voir(x,-1); } while (0)
+#define pari_examine(x) do { fputs(" " #x ": ", stdout); dbgGEN(x,-1); } while (0)
 #define pari_display(x) do { fputs(" " #x ": ", stdout); output(x); } while (0)
 #define abs(x) ((x)<0?-(x):(x))
 
