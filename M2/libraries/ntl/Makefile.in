@@ -10,31 +10,19 @@ TARFILE = ntl-$(VERSION).tar.gz
 URL = http://www.math.uiuc.edu/Macaulay2/Downloads/OtherSourceCode
 CONFIGURECMD = ./configure $(CONFIGUREOPTIONS)
 
-ifeq (@DEBUG@,yes)
-DEB_CPPFLAGS = -DDEBUG
-DEB_CFLAGS = -g -O0
-DEB_CXXFLAGS = -g -O0
-DEB_LDFLAGS = -g
-else
-DEB_CPPFLAGS = -DNDEBUG
-DEB_CFLAGS = -O2
-DEB_CXXFLAGS = -O2
-DEB_LDFLAGS =
-endif
-
-CONFIGUREOPTIONS =						\
-	WIZARD=off						\
-	NATIVE=off						\
-	PREFIX=@pre_libm2dir@					\
-	LIBDIR=@pre_librariesdir@				\
-	INCLUDEDIR=@pre_libm2dir@/include			\
-	DOCDIR=@pre_libm2dir@/share/doc				\
+CONFIGUREOPTIONS =				\
+	WIZARD=off				\
+	NATIVE=off				\
+	PREFIX=@pre_libm2dir@			\
+	LIBDIR=@pre_librariesdir@		\
+	INCLUDEDIR=@pre_libm2dir@/include	\
+	DOCDIR=@pre_libm2dir@/share/doc		\
 	NTL_GMP_LIP=on NTL_NO_INIT_TRANS=on	\
-	RANLIB="@RANLIB@"					\
-	CXX="@CXX@"						\
-	CXXFLAGS="$(CXXFLAGS) $(DEB_CXXFLAGS)"			\
-	CPPFLAGS="$(CPPFLAGS) $(DEB_CPPFLAGS)"			\
-	LDFLAGS="$(LDFLAGS) $(DEB_LDFLAGS)"			\
+	RANLIB="@RANLIB@"			\
+	CXX="@CXX@"				\
+	CXXFLAGS="$(CXXFLAGS)"			\
+	CPPFLAGS="$(CPPFLAGS)"			\
+	LDFLAGS="$(LDFLAGS)"
 
 ifeq (@DEBUG@,yes)
 CONFIGUREOPTIONS += WIZARD=off
@@ -42,11 +30,11 @@ endif
 
 BUILDOPTIONS =					\
 	MakeDescCFLAGS=-O0			\
-	CPPFLAGS="$(CPPFLAGS) $(DEB_CPPFLAGS)"	\
-	CFLAGS="$(CFLAGS) $(DEB_CFLAGS)"	\
-	CXXFLAGS="$(CXXFLAGS) $(DEB_CXXFLAGS)"	\
-	LDFLAGS="$(LDFLAGS) $(DEB_LDFLAGS)"	\
-	LDFLAGS_CXX="$(LDFLAGS) $(DEB_LDFLAGS)"
+	CPPFLAGS="$(CPPFLAGS)"			\
+	CFLAGS="$(CFLAGS)"			\
+	CXXFLAGS="$(CXXFLAGS)"			\
+	LDFLAGS="$(LDFLAGS)"			\
+	LDFLAGS_CXX="$(LDFLAGS)"
 
 # ntl's makefiles give too many warning messages about "jobserver unavailable: using -j1.  Add `+' to parent make rule."
 BUILDOPTIONS += -j1
@@ -58,16 +46,16 @@ BUILDOPTIONS += WIZARD=off
 endif
 
 CHECKOPTIONS =					\
-	CFLAGS="$(CFLAGS) $(DEB_CFLAGS)"	\
-	CXXFLAGS="$(CXXFLAGS) $(DEB_CXXFLAGS)"	\
-	LDFLAGS="$(LDFLAGS) $(DEB_LDFLAGS)"	\
-	LDFLAGS_CXX="$(LDFLAGS) $(DEB_LDFLAGS)"
+	CFLAGS="$(CFLAGS)"			\
+	CXXFLAGS="$(CXXFLAGS)"			\
+	LDFLAGS="$(LDFLAGS)"			\
+	LDFLAGS_CXX="$(LDFLAGS)"
 
 INSTALLOPTIONS =				\
-	CFLAGS="$(CFLAGS) $(DEB_CFLAGS)"	\
-	CXXFLAGS="$(CXXFLAGS) $(DEB_CXXFLAGS)"	\
-	LDFLAGS="$(LDFLAGS) $(DEB_LDFLAGS)"	\
-	LDFLAGS_CXX="$(LDFLAGS) $(DEB_LDFLAGS)"	\
+	CFLAGS="$(CFLAGS)"			\
+	CXXFLAGS="$(CXXFLAGS)"			\
+	LDFLAGS="$(LDFLAGS)"			\
+	LDFLAGS_CXX="$(LDFLAGS)"		\
 	PREFIX=$(LIBRARIESDIR)			\
 	LIBDIR=$(LIBRARIESDIR)/lib		\
 	INCLUDEDIR=$(LIBRARIESDIR)/include	\
