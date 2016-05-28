@@ -21,7 +21,7 @@ COMPILE.cpp = $(COMPILE.cc)
 
 %.o : %.cpp
 	@ echo '$(COMPILE.cpp) $(OUTPUT_OPTION) $<' >> LOGFILE
-	@ echo " ** compiling $<"
+	@ echo " ** compiling $< because of $?"
 	@ $(COMPILE.cpp) $(OUTPUT_OPTION) $<
 
 %.s : %.cpp

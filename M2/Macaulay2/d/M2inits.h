@@ -7,7 +7,6 @@ extern void M2inits1(), M2inits2();
 extern void enterM2();
 extern void check_M2init();
 extern int M2inits_run, M2inits_firsttime;
-extern void our_gmp_set_memory_functions();
 
 /* get size_t */
 #include <stddef.h>

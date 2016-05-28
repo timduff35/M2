@@ -10,6 +10,11 @@ default:
 
 DIR_BASE := $(shell lsb_release -s --id)-$(shell lsb_release -s --release)-$(shell uname -m)
 
+# givaro won't compile because of a bug we patch around
+# ffpack is also not usable
+# /usr/lib/x86_64-linux-gnu/libpari-gmp-tls.so.4 crashes on exit, so avoid it
+CONFIGOPTIONS += --enable-build-libraries="givaro fflas_ffpack pari"
+
 ifeq ($(DEBUG),yes)
 
 default: arch-chk all
@@ -41,9 +46,6 @@ endif
 endif
 CONFIGOPTIONS += --build=x86_64-unknown-linux-gnu
 CONFIGOPTIONS += --with-mpir-config-options="ABI=64"
-
-# /usr/lib/x86_64-linux-gnu/libpari-gmp-tls.so.4 crashes on exit, so avoid it:
-CONFIGOPTIONS += --enable-build-libraries=pari
 
 include Makefile.include
 pre-install:;	rm -rf /usr/local/encap/Macaulay2-$(PACKAGE_VERSION)

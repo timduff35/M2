@@ -55,7 +55,6 @@ static void initpari() {
   }
   if (gen_0 == NULL /* && FALSE /-* groan */ ) {
     pari_init_opts( PARISIZE, MAXPRIME, init_flags);
-    our_gmp_set_memory_functions(); /* undo the setting of the gmp memory functions done by pari_init_opts */
     self_initialized = TRUE;
   }
   enterM2();  /* pari_init sets the memory allocation routines for gmp, so we have to set them back */
