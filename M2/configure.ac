@@ -1238,7 +1238,7 @@ then AC_LANG(C++)
      do  test "$lib" && LIBS="$lib $LIBS"
 	 AC_LINK_IFELSE([AC_LANG_SOURCE([
 		 #include <NTL/tools.h>
-		 int main () { _ntl_GetTime(); }
+		 int main () { NTL::GetTime(); }
 		 ])],
 	     FOUND=yes; break;,
 	     LIBS=$SAVELIBS)
