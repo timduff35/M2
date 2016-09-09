@@ -12,7 +12,7 @@ dnl    - make a git tag of the form version-X.Y.Z
 dnl Note:
 dnl   Debian distributions may append a "downstream" debian release number N to the version number: X.Y.Z-N
 dnl   See distributions/deb/Makefile.in, where we allow for that, as a way to fix badly prepared binary distributions.
-AC_INIT(Macaulay2, 1.9.0.1, Macaulay2@math.uiuc.edu, Macaulay2, http://macaulay2.com/)
+AC_INIT(Macaulay2, 1.9.2.1, Macaulay2@math.uiuc.edu, Macaulay2, http://macaulay2.com/)
 
 dnl The convention for version numbers of Macaulay2 is this:
 dnl   1.3     : a major release, such as occurs every 12 months, stable, made into binary distributions
@@ -106,10 +106,6 @@ case $OS in
   CYGWIN*) OS=MicrosoftWindows ; ISSUE=${ISSUE:-Cygwin} ;;
 esac
 
-case $OS in
-   CYGWIN*) OS=MicrosoftWindows ; ISSUE=Cygwin ;;
-esac
-
 if test ! "$ISSUE"
 then if test -f /usr/bin/sw_vers
      then ISSUE_FLAVOR=`/usr/bin/sw_vers -productName`
@@ -123,6 +119,9 @@ then if test -f /usr/bin/sw_vers
      elif test -f /usr/lib/os-release
      then ISSUE_FLAVOR=`. /usr/lib/os-release ; echo $ID`
           ISSUE_RELEASE=`. /usr/lib/os-release ; echo $VERSION_ID`
+     elif test -f /etc/system-release
+     then ISSUE_FLAVOR=[`</etc/system-release head -1 | sed 's/^\([A-Za-z ]*\).*/\1/' | sed 's/ //g' `]
+          ISSUE_RELEASE=[`</etc/system-release head -1 | sed 's/[^0-9]*\([0-9.]*\).*/\1/'`]
      elif test -f /etc/issue
      then ISSUE_FLAVOR=[`</etc/issue head -1 | sed 's/^\([A-Za-z ]*\).*/\1/' | sed 's/ //g' `]
           ISSUE_RELEASE=[`</etc/issue head -1 | sed 's/[^0-9]*\([0-9.]*\).*/\1/'`]
@@ -139,6 +138,8 @@ then if test -f /usr/bin/sw_vers
 	 "Scientific"*) ISSUE_FLAVOR="ScientificLinux" ;;
 	 "Raspbian"*) ISSUE_FLAVOR=Raspbian ;;
 	 *"openSUSE") ISSUE_FLAVOR=openSUSE ;;
+	 "SUSE LINUX") ISSUE_FLAVOR=SuseLinux ;;
+	 "arch") ISSUE_FLAVOR=ArchLinux ;;
 	 "") AC_MSG_ERROR([issue not found]) ;;
 	 *)  AC_MSG_NOTICE([unrecognized issue: $ISSUE_FLAVOR]) ;;
      esac
@@ -146,6 +147,7 @@ then if test -f /usr/bin/sw_vers
 	 "") AC_MSG_NOTICE([release number not found]) 
 	     ISSUE_RELEASE=unknown ;;
      esac
+     ISSUE_FLAVOR=`echo $ISSUE_FLAVOR | sed 's/ /-/g'`
      ISSUE=$ISSUE_FLAVOR-$ISSUE_RELEASE
 fi
 
@@ -740,6 +742,7 @@ AC_SUBST(BUILTLIBS,)
 #     Initially, we offer no option for not compiling some of them.
 # The list SUBLIST is the list of submodules that might be used and linked into M2.
 # They reflect dependencies, with prerequisites listed first.
+# Note: if a library B depends on a library A, and we build A, then we should build B.
 # In particular, there are the following dependencies:
 #    mathicgb need mathic and memtailor
 #    mathic need memtailor
@@ -764,11 +767,11 @@ AC_SUBST(BUILTLIBS,)
 #    gfan is used by the packages gfanInterface and StatePolytope
 #    4ti2 is used by the package FourTiTwo
 #    linbox is provided as an option for experimentation
-#    linbox needs fflas-ffpack and givaro
-#    fflas-ffpack needs givaro and lapack
+#    linbox needs fflas_ffpack and givaro
+#    fflas_ffpack needs givaro and lapack
 #    gmp is used by givaro
 #    gmp and mpfr are used by fplll
-#    fflas-ffpack is provided as an option for experimentation
+#    fflas_ffpack is provided as an option for experimentation
 #        it needs lapack
 #    Henry Duong is experimenting with mpack, a multi-precision version of blas+lapack based on mpfr
 #    mpack depends on gmp mpfr mpc qd
@@ -1004,6 +1007,12 @@ then BUILTLIBS="-lgmpxx -lgmp $BUILTLIBS"
 else LIBS="-lgmpxx $LIBS"
 fi
 
+if [[ $BUILD_mpir = yes ]]
+then AC_MSG_NOTICE([mpir is being built, so we will build pari])
+     BUILD_pari=yes
+     BUILD_ALWAYS="pari $BUILD_ALWAYS"
+fi
+
 if test "$PARI" = yes
 then if test $BUILD_pari = no
      then AC_LANG(C)
@@ -1175,11 +1184,16 @@ then AC_LANG(C)
 fi
 test $BUILD_gdbm = yes && BUILTLIBS="-lgdbm $BUILTLIBS"
 
+dnl mpir and mpfr are always built, so flint should also always be built:
+BUILD_ALWAYS="flint $BUILD_ALWAYS"
+if test $BUILD_mpir = yes -o $BUILD_mpfr = yes
+then BUILD_flint=yes
+fi
 if test $BUILD_flint = no
 then AC_LANG(C)
      AC_CHECK_HEADER(flint/flint.h,,BUILD_flint=yes)
      if test $BUILD_flint = no
-     then AC_SEARCH_LIBS(flint_malloc,flint,,BUILD_flint=yes,-lmpfr -lgmp)
+     then AC_SEARCH_LIBS(flint_malloc,flint,,BUILD_flint=yes)
      fi
      if test $BUILD_flint = no
      then AC_MSG_CHECKING([whether flint library is version at least 2.4.3])
@@ -1304,7 +1318,6 @@ AC_ARG_ENABLE(fplll,
     ENABLE_FPLLL=yes
     )
     
-test $BUILD_givaro = yes && BUILTLIBS="-lgivaro $BUILTLIBS"
 test $BUILD_linbox = yes && BUILTLIBS="-llinbox $BUILTLIBS"
 test $BUILD_fplll = yes && BUILTLIBS="-lfplll $BUILTLIBS"
 
@@ -1581,14 +1594,23 @@ AC_LINK_IFELSE(
 	[  AC_MSG_RESULT(no) ])
 CFLAGS="$SAVE"
 
+TESTFLAG=-Wframe-address
+AC_MSG_CHECKING(whether $CC accepts $TESTFLAG)
+AC_SUBST(HAVE_WFRAME_ADDRESS,)
+SAVE=$CFLAGS
+CFLAGS="-Werror $TESTFLAG $CFLAGS"
+AC_LANG(C)
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([int main() {}])], M2_CFLAGS="$M2_CFLAGS $TESTFLAG" HAVE_WFRAME_ADDRESS=yes, HAVE_WFRAME_ADDRESS=no)
+CFLAGS=$SAVE
+AC_MSG_RESULT($HAVE_WFRAME_ADDRESS)
+
 TESTFLAG=-Wstrict-aliasing
 AC_MSG_CHECKING(whether $CC accepts $TESTFLAG)
 AC_SUBST(HAVE_WSTRICT_ALIASING,)
 SAVE=$CFLAGS
-CFLAGS="$TESTFLAG $CFLAGS"
+CFLAGS="$TESTFLAG -Werror $CFLAGS"
 AC_LANG(C)
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([int main() {}])], HAVE_WSTRICT_ALIASING=yes, HAVE_WSTRICT_ALIASING=no)
-M2_CFLAGS="$M2_CFLAGS $TESTFLAG"
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([int main() {}])], M2_CFLAGS="$M2_CFLAGS $TESTFLAG" HAVE_WSTRICT_ALIASING=yes, HAVE_WSTRICT_ALIASING=no)
 CFLAGS=$SAVE
 AC_MSG_RESULT($HAVE_WSTRICT_ALIASING)
 
@@ -1640,7 +1662,7 @@ AC_MSG_CHECKING([whether $CC accepts -Wl,-z,noexecstack])
 AC_SUBST(HAVE_WL_X_NOEXECSTACK,)
 AC_LANG(C)
 SAVE=$LDFLAGS
-LDFLAGS="$LDFLAGS -Wl,-z,noexecstack"
+LDFLAGS="$LDFLAGS -Wl,-z,noexecstack -Werror"
 AC_LINK_IFELSE([AC_LANG_SOURCE([int main() {}])], 
     HAVE_WL_X_NOEXECSTACK=yes;  AC_MSG_RESULT(yes),
     HAVE_WL_X_NOEXECSTACK=no ;  AC_MSG_RESULT(no))
@@ -1650,7 +1672,7 @@ AC_MSG_CHECKING([whether $CC accepts -Wl,--enable-auto-import])
 AC_SUBST(HAVE_WL_ENABLE_AUTO_IMPORT,)
 AC_LANG(C)
 SAVE=$LDFLAGS
-LDFLAGS="$LDFLAGS -Wl,--enable-auto-import"
+LDFLAGS="$LDFLAGS -Wl,--enable-auto-import -Werror"
 AC_LINK_IFELSE([AC_LANG_SOURCE([int main() {}])], 
     HAVE_WL_ENABLE_AUTO_IMPORT=yes;  AC_MSG_RESULT(yes),
     HAVE_WL_ENABLE_AUTO_IMPORT=no ;  AC_MSG_RESULT(no))
@@ -1660,7 +1682,7 @@ AC_MSG_CHECKING([whether $CC accepts -Wl,-Map,conftest.mapfile])
 AC_SUBST(HAVE_WL_MAP,)
 AC_LANG(C)
 SAVE=$LDFLAGS
-LDFLAGS="$LDFLAGS -Wl,-Map,conftest.mapfile"
+LDFLAGS="$LDFLAGS -Wl,-Map,conftest.mapfile -Werror"
 AC_LINK_IFELSE([AC_LANG_SOURCE([int main() {}])], 
     HAVE_WL_MAP=yes;  AC_MSG_RESULT(yes),
     HAVE_WL_MAP=no ;  AC_MSG_RESULT(no))
