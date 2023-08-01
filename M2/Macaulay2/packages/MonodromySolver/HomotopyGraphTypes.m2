@@ -270,7 +270,7 @@ trackEdge (HomotopyEdge, Boolean, Thing) := (e, from1to2, batchSize) -> (
 	    if ((HG.FilterCondition =!= null) and 
 		(HG.FilterCondition(transpose matrix tail.BasePoint, transpose matrix s))) then (
                 if HG.Verbose then << "a path failed (flagged by FilterCondition)" << endl;
-		s.SolutionStatus = FilterFailure;
+		s.cache.SolutionStatus = FilterFailure;
 	       	correspondence#a = null; -- record failure		  
 		);
 	    if (status s =!= Regular) then (
@@ -357,6 +357,22 @@ flowerGraphInit = (HG, p, node1, nnodes, nedges) -> (
     updateFirstDirectedEdge HG;
 
 )
+
+-- test added to ensure FilterCondition and squareDown work somewhat reasonably
+/// TEST
+X = gateMatrix{toList vars(x,y,z)}
+P = gateMatrix{toList vars(a..d)}
+IX = gateSystem(P,X,gateMatrix{{y^2-x*z},{x^2*y-z^2},{x^3-y*z},{a*x+b*y+c*z+d}})
+FX = gateSystem(P,X,gateMatrix{{y^2-x*z},{x^2*y-z^2},{a*x+b*y+c*z+d}})
+P0 = point {{1_CC,-1,1,-1}}
+X0 = point {{1_CC,0,0}}
+X1 = point {{1_CC,1,1}}
+filterEval = (p, x) -> (1e-10 < norm evaluate(IX, p, x))
+filterEval(P0, X0)
+assert(6 == length points (first monodromySolve(FX, P0, {X0, X1}, NumberOfNodes => 4)).PartialSols)
+assert(5 == length points (first monodromySolve(FX, P0, {X1}, NumberOfNodes => 4)).PartialSols)
+assert(5 == length points((first monodromySolve(FX, P0, {X0, X1}, Verbose => true, NumberOfNodes => 4, FilterCondition => ((p,x) -> filterEval(transpose matrix p, transpose matrix x)))).PartialSols)
+///
 
 -- static flower augmentation function
 flowerGraphAugment = (HG, p, node1, nStartingEdges, nNewEdges, nNewNodes) -> (
